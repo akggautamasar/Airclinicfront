@@ -4,11 +4,14 @@ import Toast from '../components/Toast'
 import { api } from '../lib/api'
 
 export default function Profile() {
-  const [form, setForm] = useState({ name:'', phone:'', specialty:'', clinic_name:'', clinic_address:'', license_number:'', slot_duration_minutes:15 })
+  const [form, setForm] = useState({ name:'', phone:'', specialty:'', clinic_name:'', clinic_address:'', license_number:'', slot_duration_minutes:15, clinic_code:'' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isNew, setIsNew] = useState(false)
   const [toast, setToast] = useState(null)
+  const [copied, setCopied] = useState(false)
+
+  const bookingLink = form.clinic_code ? `https://airmedicare.vercel.app/book/${form.clinic_code}` : ''
 
   useEffect(() => {
     api.getProfile().then(d => { setForm(d.doctor); setLoading(false) })
@@ -25,6 +28,12 @@ export default function Profile() {
     setSaving(false)
   }
 
+  const copyLink = () => {
+    navigator.clipboard.writeText(bookingLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   return (
@@ -36,6 +45,27 @@ export default function Profile() {
 
       {loading ? <div className="spinner" /> : (
         <>
+          {/* Patient Booking Link */}
+          {bookingLink && (
+            <div className="card" style={{ marginBottom: 20, borderColor: 'rgba(0,212,170,0.3)' }}>
+              <div className="card-title">🔗 Your Patient Booking Link</div>
+              <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12, marginTop: 4 }}>
+                Share this link with patients — they can book slots themselves, 24/7
+              </p>
+              <div style={{ display:'flex', gap:10, alignItems:'center', background:'var(--bg3)', borderRadius:8, padding:'10px 14px', border:'1px solid var(--border)' }}>
+                <div style={{ flex:1, fontSize:13, fontFamily:'var(--mono)', color:'var(--accent)', wordBreak:'break-all' }}>
+                  {bookingLink}
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={copyLink} style={{ flexShrink:0 }}>
+                  {copied ? '✓ Copied!' : 'Copy'}
+                </button>
+              </div>
+              <div style={{ marginTop:10, fontSize:12, color:'var(--muted)' }}>
+                Clinic code: <strong style={{ color:'var(--text)', fontFamily:'var(--mono)' }}>{form.clinic_code}</strong>
+              </div>
+            </div>
+          )}
+
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="card-title">Doctor Information</div>
             <div className="grid-2" style={{ marginTop: 16 }}>
@@ -62,6 +92,11 @@ export default function Profile() {
               </div>
             </div>
             <div className="form-group"><label>Clinic Address</label><textarea value={form.clinic_address||''} onChange={f('clinic_address')} rows={2} placeholder="Full address..." /></div>
+            <div className="form-group">
+              <label>Clinic Code (for booking link)</label>
+              <input value={form.clinic_code||''} onChange={e => setForm(p=>({...p, clinic_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'')}))} placeholder="e.g. DRSHARMA" maxLength={12} />
+              <div style={{ fontSize:12, color:'var(--muted)', marginTop:4 }}>Letters and numbers only. This appears in your patient booking link.</div>
+            </div>
           </div>
 
           <div style={{ display:'flex', justifyContent:'flex-end' }}>
